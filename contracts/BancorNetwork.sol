@@ -27,25 +27,7 @@ interface ILegacyConverter {
     ) external returns (uint256);
 }
 
-/**
- * @dev This contract is the main entry point for Bancor token conversions.
- * It also allows for the conversion of any token in the Bancor Network to any other token in a single
- * transaction by providing a conversion path.
- *
- * A note on Conversion Path: Conversion path is a data structure that is used when converting a token
- * to another token in the Bancor Network, when the conversion cannot necessarily be done by a single
- * converter and might require multiple 'hops'.
- * The path defines which converters should be used and what kind of conversion should be done in each step.
- *
- * The path format doesn't include complex structure; instead, it is represented by a single array
- * in which each 'hop' is represented by a 2-tuple - converter anchor & target token.
- * In addition, the first element is always the source token.
- * The converter anchor is only used as a pointer to a converter (since converter addresses are more
- * likely to change as opposed to anchor addresses).
- *
- * Format:
- * [source token, converter anchor, target token, converter anchor, target token...]
- */
+
 contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, ReentrancyGuard {
     using SafeMath for uint256;
     using ReserveToken for IReserveToken;
@@ -61,9 +43,7 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         bool isV28OrHigherConverter;
     }
 
-    /**
-     * @dev triggered when a conversion between two tokens occurs
-     */
+
     event Conversion(
         IConverterAnchor indexed anchor,
         IReserveToken indexed sourceToken,
@@ -72,17 +52,7 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         uint256 targetAmount,
         address trader
     );
-
-    /**
-     * @dev initializes a new BancorNetwork instance
-     */
-    constructor(IContractRegistry registry) public ContractRegistryClient(registry) {}
-
-    /**
-     * @dev returns the conversion path between two tokens in the network
-     *
-     * note that this method is quite expensive in terms of gas and should generally be called off-chain
-     */
+]
     function conversionPath(IReserveToken sourceToken, IReserveToken targetToken)
         public
         view
@@ -92,11 +62,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         return pathFinder.findPath(sourceToken, targetToken);
     }
 
-    /**
-     * @dev returns the expected target amount of converting a given amount on a given path
-     *
-     * note that there is no support for circular paths
-     */
     function rateByPath(address[] memory path, uint256 sourceAmount) public view override returns (uint256) {
         // verify that the number of elements is larger than 2 and odd
         require(path.length > 2 && path.length % 2 == 1, "ERR_INVALID_PATH");
@@ -115,12 +80,7 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         return amount;
     }
 
-    /**
-     * @dev converts the token to any other token in the bancor network by following a predefined conversion path and
-     * transfers the result tokens to a target account
-     *
-     * note that the network should already have been given allowance of the source token (if not ETH)
-     */
+
     function convertByPath2(
         address[] memory path,
         uint256 sourceAmount,
@@ -148,12 +108,7 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         return amount;
     }
 
-    /**
-     * @dev converts any other token to BNT in the bancor network by following a predefined conversion path and
-     * transfers the result to an account on a different blockchain
-     *
-     * note that the network should already have been given allowance of the source token (if not ETH)
-     */
+
     function xConvert(
         address[] memory path,
         uint256 sourceAmount,
@@ -180,14 +135,7 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         return amount;
     }
 
-    /**
-     * @dev allows a user to convert a token that was sent from another blockchain into any other token on the
-     * BancorNetwork
-     *
-     * note that ideally this transaction should've been created before the previous conversion is even complete, so
-     * so the input amount isn't known at that point - the amount is actually take from the
-     * BancorX contract directly by specifying the conversion id
-     */
+
     function completeXConversion(
         address[] memory path,
         IBancorX bancorX,
@@ -205,9 +153,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         return convertByPath2(path, amount, minReturn, beneficiary);
     }
 
-    /**
-     * @dev executes the actual conversion by following the conversion path
-     */
     function _doConversion(
         ConversionStep[] memory data,
         uint256 sourceAmount,
@@ -275,9 +220,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         return targetAmount;
     }
 
-    /**
-     * @dev validates msg.value and prepares the conversion source token for the conversion
-     */
     function _handleSourceToken(
         IReserveToken sourceToken,
         IConverterAnchor anchor,
@@ -302,9 +244,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         }
     }
 
-    /**
-     * @dev handles the conversion target token if the network still holds it at the end of the conversion
-     */
     function _handleTargetToken(
         ConversionStep[] memory data,
         uint256 targetAmount,
@@ -322,9 +261,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         targetToken.safeTransfer(beneficiary, targetAmount);
     }
 
-    /**
-     * @dev creates a memory cache of all conversion steps data to minimize logic and external calls during conversions
-     */
     function _createConversionData(address[] memory path, address payable beneficiary)
         private
         view
