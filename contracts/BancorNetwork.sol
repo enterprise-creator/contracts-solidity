@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -17,7 +16,6 @@ import "./token/ReserveToken.sol";
 
 import "./bancorx/interfaces/IBancorX.sol";
 
-// interface of older converters for backward compatibility
 interface ILegacyConverter {
     function change(
         IReserveToken sourceToken,
@@ -236,7 +234,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
     ) private {
         ConversionStep memory stepData = data[data.length - 1];
 
-        // network contract doesn't hold the tokens, do nothing
         if (stepData.beneficiary != address(this)) {
             return;
         }
@@ -269,23 +266,22 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
             });
         }
 
-        // set the beneficiary for each step
         for (i = 0; i < data.length; i++) {
             ConversionStep memory stepData = data[i];
-            // check if the converter in this step is newer as older converters don't even support the beneficiary argument
+            
             if (stepData.isV28OrHigherConverter) {
                 if (i == data.length - 1) {
-                    // converter in this step is newer, beneficiary is the user input address
+                
                     stepData.beneficiary = beneficiary;
                 } else if (data[i + 1].isV28OrHigherConverter) {
-                    // the converter in the next step is newer, beneficiary is the next converter
+                
                     stepData.beneficiary = address(data[i + 1].converter);
                 } else {
-                    // the converter in the next step is older, beneficiary is the network contract
+                
                     stepData.beneficiary = payable(address(this));
                 }
             } else {
-                // converter in this step is older, beneficiary is the network contract
+            
                 stepData.beneficiary = payable(address(this));
             }
         }
@@ -295,7 +291,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
 
     bytes4 private constant GET_RETURN_FUNC_SELECTOR = bytes4(keccak256("getReturn(address,address,uint256)"));
 
-    // using a static call to get the return from older converters
     function _getReturn(
         IConverter dest,
         IReserveToken sourceToken,
@@ -319,9 +314,8 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
     }
 
     bytes4 private constant IS_V28_OR_HIGHER_FUNC_SELECTOR = bytes4(keccak256("isV28OrHigher()"));
+    
 
-    // using a static call to identify converter version
-    // can't rely on the version number since the function had a different signature in older converters
     function _isV28OrHigherConverter(IConverter converter) internal view returns (bool) {
         bytes memory data = abi.encodeWithSelector(IS_V28_OR_HIGHER_FUNC_SELECTOR);
         (bool success, bytes memory returnData) = address(converter).staticcall{ gas: 4000 }(data);
