@@ -157,7 +157,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
                 }
             } else {
                 assert(address(stepData.sourceToken) != address(stepData.anchor));
-                // grant allowance for it to transfer the tokens from the network contract
                 stepData.sourceToken.ensureApprove(address(stepData.converter), sourceAmount);
             }
 
