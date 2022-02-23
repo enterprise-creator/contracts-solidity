@@ -160,7 +160,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
                 stepData.sourceToken.ensureApprove(address(stepData.converter), sourceAmount);
             }
 
-            // do the conversion
             if (!stepData.isV28OrHigherConverter) {
                 targetAmount = ILegacyConverter(address(stepData.converter)).change(
                     stepData.sourceToken,
@@ -217,10 +216,8 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         } else {
             require(!sourceToken.isNativeToken(), "ERR_INVALID_SOURCE_TOKEN");
             if (isNewerConverter) {
-                // newer converter - transfer the tokens from the sender directly to the converter
                 sourceToken.safeTransferFrom(msg.sender, address(firstConverter), sourceAmount);
             } else {
-                // otherwise claim the tokens
                 sourceToken.safeTransferFrom(msg.sender, address(this), sourceAmount);
             }
         }
