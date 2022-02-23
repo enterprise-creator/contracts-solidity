@@ -63,12 +63,12 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
     }
 
     function rateByPath(address[] memory path, uint256 sourceAmount) public view override returns (uint256) {
-        // verify that the number of elements is larger than 2 and odd
+
         require(path.length > 2 && path.length % 2 == 1, "ERR_INVALID_PATH");
 
         uint256 amount = sourceAmount;
 
-        // iterate over the conversion path
+ 
         for (uint256 i = 2; i < path.length; i += 2) {
             IReserveToken sourceToken = IReserveToken(path[i - 2]);
             address anchor = path[i - 1];
@@ -87,22 +87,17 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         uint256 minReturn,
         address payable beneficiary
     ) public payable nonReentrant greaterThanZero(minReturn) returns (uint256) {
-        // verify that the path contains at least a single 'hop' and that the number of elements is odd
         require(path.length > 2 && path.length % 2 == 1, "ERR_INVALID_PATH");
 
-        // validate msg.value and prepare the source token for the conversion
         _handleSourceToken(IReserveToken(path[0]), IConverterAnchor(path[1]), sourceAmount);
 
-        // check if beneficiary is set
         if (beneficiary == address(0)) {
             beneficiary = msg.sender;
         }
 
-        // convert and get the resulting amount
         ConversionStep[] memory data = _createConversionData(path, beneficiary);
         uint256 amount = _doConversion(data, sourceAmount, minReturn);
 
-        // handle the conversion target tokens
         _handleTargetToken(data, amount, beneficiary);
 
         return amount;
@@ -120,16 +115,12 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         IReserveToken targetToken = IReserveToken(path[path.length - 1]);
         IBancorX bancorX = IBancorX(_addressOf(BANCOR_X));
 
-        // verify that the destination token is BNT
         require(targetToken == IReserveToken(_addressOf(BNT_TOKEN)), "ERR_INVALID_TARGET_TOKEN");
 
-        // convert and get the resulting amount
         uint256 amount = convertByPath2(path, sourceAmount, minReturn, payable(address(this)));
 
-        // grant BancorX allowance
         targetToken.ensureApprove(address(bancorX), amount);
 
-        // transfer the resulting amount to BancorX
         bancorX.xTransfer(targetBlockchain, targetAccount, amount, conversionId);
 
         return amount;
@@ -143,13 +134,11 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         uint256 minReturn,
         address payable beneficiary
     ) public returns (uint256) {
-        // verify that the source token is the BancorX token
+    
         require(path[0] == address(bancorX.token()), "ERR_INVALID_SOURCE_TOKEN");
 
-        // get conversion amount from BancorX contract
         uint256 amount = bancorX.getXTransferAmount(conversionId, msg.sender);
 
-        // perform the conversion
         return convertByPath2(path, amount, minReturn, beneficiary);
     }
 
@@ -160,14 +149,11 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
     ) private returns (uint256) {
         uint256 targetAmount;
 
-        // iterate over the conversion data
         for (uint256 i = 0; i < data.length; i++) {
             ConversionStep memory stepData = data[i];
 
-            // newer converter
             if (stepData.isV28OrHigherConverter) {
-                // transfer the tokens to the converter only if the network contract currently holds the tokens
-                // not needed with ETH or if it's the first conversion step
+            
                 if (i != 0 && data[i - 1].beneficiary == address(this) && !stepData.sourceToken.isNativeToken()) {
                     stepData.sourceToken.safeTransfer(address(stepData.converter), sourceAmount);
                 }
@@ -214,7 +200,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
             sourceAmount = targetAmount;
         }
 
-        // ensure the trade meets the minimum requested amount
         require(targetAmount >= minReturn, "ERR_RETURN_TOO_LOW");
 
         return targetAmount;
@@ -268,7 +253,6 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
     {
         ConversionStep[] memory data = new ConversionStep[](path.length / 2);
 
-        // iterate the conversion path and create the conversion data for each step
         uint256 i;
         for (i = 0; i < path.length - 1; i += 2) {
             IConverterAnchor anchor = IConverterAnchor(path[i + 1]);
