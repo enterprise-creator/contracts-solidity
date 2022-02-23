@@ -51,6 +51,8 @@ contract BancorNetwork is IBancorNetwork, TokenHolder, ContractRegistryClient, R
         address trader
     );
 ]
+    constructor(IContractRegistry registry) public ContractRegistryClient(registry) {}
+
     function conversionPath(IReserveToken sourceToken, IReserveToken targetToken)
         public
         view
