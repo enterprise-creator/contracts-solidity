@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -19,55 +18,36 @@ import "../liquidity-protection/interfaces/ILiquidityProtection.sol";
 
 import "./interfaces/IStakingRewards.sol";
 
-/**
- * @dev This contract manages the distribution of the staking rewards
- */
+
 contract StakingRewards is IStakingRewards, AccessControl, Time, Utils, ContractRegistryClient {
     using SafeMath for uint256;
     using ReserveToken for IReserveToken;
     using SafeERC20 for IERC20;
     using SafeERC20Ex for IERC20;
 
-    // the role is used to globally govern the contract and its governing roles.
     bytes32 public constant ROLE_SUPERVISOR = keccak256("ROLE_SUPERVISOR");
 
-    // the roles is used to restrict who is allowed to publish liquidity protection events.
     bytes32 public constant ROLE_PUBLISHER = keccak256("ROLE_PUBLISHER");
 
-    // the roles is used to restrict who is allowed to update/cache provider rewards.
     bytes32 public constant ROLE_UPDATER = keccak256("ROLE_UPDATER");
 
-    // the weekly 25% increase of the rewards multiplier (in units of PPM).
     uint32 private constant MULTIPLIER_INCREMENT = PPM_RESOLUTION / 4;
 
-    // the maximum weekly 200% rewards multiplier (in units of PPM).
     uint32 private constant MAX_MULTIPLIER = PPM_RESOLUTION + MULTIPLIER_INCREMENT * 4;
 
-    // the rewards halving factor we need to take into account during the sanity verification process.
     uint8 private constant REWARDS_HALVING_FACTOR = 4;
-
-    // since we will be dividing by the total amount of protected tokens in units of wei, we can encounter cases
-    // where the total amount in the denominator is higher than the product of the rewards rate and staking duration. In
-    // order to avoid this imprecision, we will amplify the reward rate by the units amount.
     uint256 private constant REWARD_RATE_FACTOR = 1e18;
 
     uint256 private constant MAX_UINT256 = uint256(-1);
 
-    // the staking rewards settings.
     IStakingRewardsStore private immutable _store;
 
-    // the permissioned wrapper around the network token which should allow this contract to mint staking rewards.
     ITokenGovernance private immutable _networkTokenGovernance;
 
-    // the address of the network token.
     IERC20 private immutable _networkToken;
 
-    // the checkpoint store recording last protected position removal times.
     ICheckpointStore private immutable _lastRemoveTimes;
 
-    /**
-     * @dev initializes a new StakingRewards contract
-     */
     constructor(
         IStakingRewardsStore store,
         ITokenGovernance networkTokenGovernance,
@@ -112,14 +92,6 @@ contract StakingRewards is IStakingRewards, AccessControl, Time, Utils, Contract
         require(hasRole(ROLE_UPDATER, msg.sender), "ERR_ACCESS_DENIED");
     }
 
-    /**
-     * @dev liquidity provision notification callback. The callback should be called *before* the liquidity is added in
-     * the LP contract
-     *
-     * Requirements:
-     *
-     * - the caller must have the ROLE_PUBLISHER role
-     */
     function onAddingLiquidity(
         address provider,
         IConverterAnchor poolAnchor,
@@ -136,14 +108,6 @@ contract StakingRewards is IStakingRewards, AccessControl, Time, Utils, Contract
         _updateRewards(provider, poolToken, reserveToken, program, _liquidityProtectionStats());
     }
 
-    /**
-     * @dev liquidity removal callback. The callback must be called *before* the liquidity is removed in the LP
-     * contract
-     *
-     * Requirements:
-     *
-     * - the caller must have the ROLE_PUBLISHER role
-     */
     function onRemovingLiquidity(
         uint256, /* id */
         address provider,
