@@ -173,16 +173,12 @@ contract StakingRewards is IStakingRewards, AccessControl, Time, Utils, Contract
         return _pendingRewards(provider, _liquidityProtectionStats());
     }
 
-    /**
-     * @dev returns specific provider's pending rewards for a specific participating pool
-     */
+
     function pendingPoolRewards(address provider, IDSToken poolToken) external view override returns (uint256) {
         return _pendingRewards(provider, poolToken, _liquidityProtectionStats());
     }
 
-    /**
-     * @dev returns specific provider's pending rewards for a specific participating pool/reserve
-     */
+  
     function pendingReserveRewards(
         address provider,
         IDSToken poolToken,
@@ -193,9 +189,7 @@ contract StakingRewards is IStakingRewards, AccessControl, Time, Utils, Contract
         return _pendingRewards(provider, poolToken, reserveToken, program, _liquidityProtectionStats());
     }
 
-    /**
-     * @dev returns the current rewards multiplier for a provider in a given pool
-     */
+
     function rewardsMultiplier(
         address provider,
         IDSToken poolToken,
@@ -206,9 +200,7 @@ contract StakingRewards is IStakingRewards, AccessControl, Time, Utils, Contract
         return _rewardsMultiplier(provider, providerRewards.effectiveStakingTime, program);
     }
 
-    /**
-     * @dev returns specific provider's total claimed rewards from all participating pools
-     */
+  
     function totalClaimedRewards(address provider) external view override returns (uint256) {
         uint256 totalRewards = 0;
 
@@ -231,23 +223,16 @@ contract StakingRewards is IStakingRewards, AccessControl, Time, Utils, Contract
         return totalRewards;
     }
 
-    /**
-     * @dev claims pending rewards from all participating pools
-     */
+ 
     function claimRewards() external override returns (uint256) {
         return _claimPendingRewards(msg.sender, _liquidityProtectionStats());
     }
 
-    /**
-     * @dev stakes all pending rewards into another participating pool
-     */
+
     function stakeRewards(uint256 maxAmount, IDSToken newPoolToken) external override returns (uint256, uint256) {
         return _stakeRewards(msg.sender, maxAmount, newPoolToken, _liquidityProtectionStats());
     }
 
-    /**
-     * @dev stakes specific pending rewards into another participating pool
-     */
     function stakeReserveRewards(
         IDSToken poolToken,
         IReserveToken reserveToken,
